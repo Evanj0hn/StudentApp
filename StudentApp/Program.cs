@@ -13,12 +13,23 @@ builder.Services.AddDbContext<StudentContext>(options =>
 
 var app = builder.Build();
 
-// Seed database with initial data (Bart & Lisa)
+// Seed database with initial data
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<StudentContext>();
     context.Database.Migrate(); // Apply any pending migrations
 
+    // Seed Programs first
+    if (!context.Programs.Any())
+    {
+        context.Programs.AddRange(
+            new ProgramOfStudy { ProgramCode = "CPA", Name = "Computer Programmer Analyst" },
+            new ProgramOfStudy { ProgramCode = "BACS", Name = "Bachelor of Applied Computer Science" }
+        );
+        context.SaveChanges();
+    }
+
+    // Then seed Students
     if (!context.Students.Any())
     {
         context.Students.AddRange(
@@ -28,7 +39,8 @@ using (var scope = app.Services.CreateScope())
                 LastName = "Simpson",
                 DateOfBirth = new DateTime(1971, 5, 31),
                 GPA = 2.7,
-                MyField = "Skateboarding"
+                MyField = "Skateboarding",
+                ProgramCode = "CPA"
             },
             new Student
             {
@@ -36,7 +48,8 @@ using (var scope = app.Services.CreateScope())
                 LastName = "Simpson",
                 DateOfBirth = new DateTime(1973, 8, 5),
                 GPA = 4.0,
-                MyField = "Saxophone"
+                MyField = "Saxophone",
+                ProgramCode = "BACS"
             }
         );
         context.SaveChanges();
@@ -50,9 +63,7 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStaticFiles();
-
 app.UseRouting();
-
 app.UseAuthorization();
 
 app.MapControllerRoute(
