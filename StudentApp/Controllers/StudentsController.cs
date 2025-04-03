@@ -7,9 +7,6 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using StudentApp.Data;
 using StudentApp.Models;
-using StudentApp.Data;
-
-
 
 namespace StudentApp.Controllers
 {
@@ -25,7 +22,8 @@ namespace StudentApp.Controllers
         // GET: Students
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Students.ToListAsync());
+            var students = await _context.Students.Include(s => s.Program).ToListAsync();
+            return View(students);
         }
 
         // GET: Students/Details/5
@@ -37,7 +35,9 @@ namespace StudentApp.Controllers
             }
 
             var student = await _context.Students
+                .Include(s => s.Program)
                 .FirstOrDefaultAsync(m => m.Id == id);
+
             if (student == null)
             {
                 return NotFound();
@@ -49,15 +49,14 @@ namespace StudentApp.Controllers
         // GET: Students/Create
         public IActionResult Create()
         {
+            ViewBag.ProgramCode = new SelectList(_context.Programs, "ProgramCode", "Name");
             return View();
         }
 
         // POST: Students/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,FirstName,LastName,DateOfBirth,GPA,MyField")] Student student)
+        public async Task<IActionResult> Create([Bind("Id,FirstName,LastName,DateOfBirth,GPA,MyField,ProgramCode")] Student student)
         {
             if (ModelState.IsValid)
             {
@@ -65,6 +64,8 @@ namespace StudentApp.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
+
+            ViewBag.ProgramCode = new SelectList(_context.Programs, "ProgramCode", "Name", student.ProgramCode);
             return View(student);
         }
 
@@ -81,15 +82,15 @@ namespace StudentApp.Controllers
             {
                 return NotFound();
             }
+
+            ViewBag.ProgramCode = new SelectList(_context.Programs, "ProgramCode", "Name", student.ProgramCode);
             return View(student);
         }
 
         // POST: Students/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,FirstName,LastName,DateOfBirth,GPA,MyField")] Student student)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,FirstName,LastName,DateOfBirth,GPA,MyField,ProgramCode")] Student student)
         {
             if (id != student.Id)
             {
@@ -114,8 +115,11 @@ namespace StudentApp.Controllers
                         throw;
                     }
                 }
+
                 return RedirectToAction(nameof(Index));
             }
+
+            ViewBag.ProgramCode = new SelectList(_context.Programs, "ProgramCode", "Name", student.ProgramCode);
             return View(student);
         }
 
@@ -128,6 +132,7 @@ namespace StudentApp.Controllers
             }
 
             var student = await _context.Students
+                .Include(s => s.Program)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (student == null)
             {
